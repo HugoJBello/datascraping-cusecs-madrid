@@ -70,7 +70,7 @@ export class ScrapperIdealistaPuppeteer {
 
                             await this.page.waitFor(this.timoutTimeSearches);
                             console.log(data);
-                            capchaFound = await this.detectCapcha();
+                            capchaFound = await this.detectCapcha(data);
                         }
                         if (!capchaFound) {
                             if (data) { extractedData.scrapedData.push(data); }
@@ -109,7 +109,7 @@ export class ScrapperIdealistaPuppeteer {
     async extractDataAlquilerVenta(municipio: any, cusec: any) {
         const urlVenta = "https://www.idealista.com/en/areas/venta-viviendas/?shape=" + cusec.urlEncoded;
         console.log("extrayendo datos de venta para " + municipio.fileName + " \n" + urlVenta);
-        let data: any = { fecha: this.date, cusec: cusec.cusec, nmun: cusec.nmun, precio_medio_venta: 0, numero_anuncios_venta: 0, precio_medio_alquiler: 0, numero_anuncios_alquiler: 0 };
+        let data: any = { fecha: this.date, cusec: cusec.cusec, nmun: cusec.nmun, precio_medio_venta: undefined, numero_anuncios_venta: undefined, precio_medio_alquiler: undefined, numero_anuncios_alquiler: undefined };
         data["_id"] = cusec.cusec + "--" + this.date;
         try {
             const extractedVenta = await this.extractPrize(urlVenta);
@@ -137,15 +137,32 @@ export class ScrapperIdealistaPuppeteer {
     extractPrize = async (urlVenta: string) => {
         await this.page.goto(urlVenta);
         await this.page.screenshot({ path: 'example.png' });
-        const elementPrize = await this.page.$(".items-average-price");
-        const text = await this.page.evaluate((element: any) => element.textContent, elementPrize);
-        const averagePrize = text.replace("Average price:", "").replace("eur/m²", "").replace(",", "").trim()
+        let averagePrize = '0';
+        let numberOfElements = '0';
+        if (! await this.detectedNoResultsPage()) {
+            const elementPrize = await this.page.$(".items-average-price");
+            const text = await this.page.evaluate((element: any) => element.textContent, elementPrize);
+            averagePrize = text.replace("Average price:", "").replace("eur/m²", "").replace(",", "").trim()
 
-        const elementNumber = await this.page.$(".h1-simulated");
-        const textNumber = await this.page.evaluate((element: any) => element.textContent, elementNumber);
-        const numberOfElements = textNumber.replace(" ", "").trim()
-
+            const elementNumber = await this.page.$(".h1-simulated");
+            const textNumber = await this.page.evaluate((element: any) => element.textContent, elementNumber);
+            numberOfElements = textNumber.replace(" ", "").trim()
+        }
         return { averagePrize: averagePrize, numberOfElements: numberOfElements }
+    }
+
+    detectedNoResultsPage = async () => {
+        let found;
+        try {
+            const pagetxt = await this.page.content();
+            found = pagetxt.indexOf('t found what you are looking', 1) > -1;
+            if (found) {
+                console.log("no results found");
+            }
+        } catch (error) {
+            return false
+        }
+        return found;
     }
 
     saveInCsv = (extractedData: ExtractedData, json_file: string) => {
@@ -164,20 +181,22 @@ export class ScrapperIdealistaPuppeteer {
         }
     }
 
-    detectCapcha = async () => {
-        let found;
-        try {
-            const pagetxt = await this.page.content();
-            found = pagetxt.indexOf('Vaya! parece que estamos recibiendo muchas peticiones', 1) > -1;
-            if (found) {
-                console.log("--------------------\n Captcha ha saltado!")
-                console.log("esperando...");
-                await this.page.waitFor(this.timoutTimeCapchaDetected);
-                await this.initalizePuppeteer();
+    detectCapcha = async (data: CusecData) => {
+        let found = false;
+        if (!data.precio_medio_venta && !data.precio_medio_alquiler) {
+            try {
+                const pagetxt = await this.page.content();
+                found = pagetxt.indexOf('Vaya! parece que estamos recibiendo muchas peticiones', 1) > -1;
+                if (found) {
+                    console.log("--------------------\n Captcha ha saltado!")
+                    console.log("esperando...");
+                    await this.page.waitFor(this.timoutTimeCapchaDetected);
+                    await this.initalizePuppeteer();
 
+                }
+            } catch (error) {
+                return false
             }
-        } catch (error) {
-            return false
         }
         return found;
     }
