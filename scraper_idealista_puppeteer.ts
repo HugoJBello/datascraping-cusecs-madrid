@@ -33,7 +33,7 @@ export class ScrapperIdealistaPuppeteer {
         this.outputTempDir = this.outputTempDir + this.sessionId + "/";
         this.sessionId = this.config.sessionId;
         console.log("\n-------------------------------------------------------");
-        console.log(this.sessionId);
+        console.log("starting execution " + this.sessionId);
         console.log("\n-------------------------------------------------------");
 
     }
