@@ -63,7 +63,8 @@ var ScrapperIdealistaPuppeteer = /** @class */ (function () {
                         _a = this;
                         return [4 /*yield*/, Apify.launchPuppeteer({
                                 userAgent: randomUA.generate(),
-                                headless: true
+                                headless: true,
+                                args: ['--no-sandbox', '--disable-setuid-sandbox']
                             })];
                     case 1:
                         _a.browser = _c.sent();
@@ -76,7 +77,7 @@ var ScrapperIdealistaPuppeteer = /** @class */ (function () {
             });
         }); };
         this.extractPrize = function (urlVenta) { return __awaiter(_this, void 0, void 0, function () {
-            var elementPrize, text, averagePrize, elementNumber, textNumber, numberOfElements;
+            var averagePrize, numberOfElements, elementPrize, text, elementNumber, textNumber;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, this.page.goto(urlVenta)];
@@ -85,21 +86,48 @@ var ScrapperIdealistaPuppeteer = /** @class */ (function () {
                         return [4 /*yield*/, this.page.screenshot({ path: 'example.png' })];
                     case 2:
                         _a.sent();
-                        return [4 /*yield*/, this.page.$(".items-average-price")];
+                        averagePrize = '0';
+                        numberOfElements = '0';
+                        return [4 /*yield*/, this.detectedNoResultsPage()];
                     case 3:
+                        if (!!(_a.sent())) return [3 /*break*/, 8];
+                        return [4 /*yield*/, this.page.$(".items-average-price")];
+                    case 4:
                         elementPrize = _a.sent();
                         return [4 /*yield*/, this.page.evaluate(function (element) { return element.textContent; }, elementPrize)];
-                    case 4:
+                    case 5:
                         text = _a.sent();
                         averagePrize = text.replace("Average price:", "").replace("eur/m²", "").replace(",", "").trim();
                         return [4 /*yield*/, this.page.$(".h1-simulated")];
-                    case 5:
+                    case 6:
                         elementNumber = _a.sent();
                         return [4 /*yield*/, this.page.evaluate(function (element) { return element.textContent; }, elementNumber)];
-                    case 6:
+                    case 7:
                         textNumber = _a.sent();
                         numberOfElements = textNumber.replace(" ", "").trim();
-                        return [2 /*return*/, { averagePrize: averagePrize, numberOfElements: numberOfElements }];
+                        _a.label = 8;
+                    case 8: return [2 /*return*/, { averagePrize: averagePrize, numberOfElements: numberOfElements }];
+                }
+            });
+        }); };
+        this.detectedNoResultsPage = function () { return __awaiter(_this, void 0, void 0, function () {
+            var found, pagetxt, error_1;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 2, , 3]);
+                        return [4 /*yield*/, this.page.content()];
+                    case 1:
+                        pagetxt = _a.sent();
+                        found = pagetxt.indexOf('t found what you are looking', 1) > -1;
+                        if (found) {
+                            console.log("no results found");
+                        }
+                        return [3 /*break*/, 3];
+                    case 2:
+                        error_1 = _a.sent();
+                        return [2 /*return*/, false];
+                    case 3: return [2 /*return*/, found];
                 }
             });
         }); };
@@ -118,31 +146,35 @@ var ScrapperIdealistaPuppeteer = /** @class */ (function () {
                 }
             }
         };
-        this.detectCapcha = function () { return __awaiter(_this, void 0, void 0, function () {
-            var found, pagetxt, error_1;
+        this.detectCapcha = function (data) { return __awaiter(_this, void 0, void 0, function () {
+            var found, pagetxt, error_2;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        _a.trys.push([0, 5, , 6]);
-                        return [4 /*yield*/, this.page.content()];
+                        found = false;
+                        if (!(!data.precio_medio_venta && !data.precio_medio_alquiler)) return [3 /*break*/, 7];
+                        _a.label = 1;
                     case 1:
+                        _a.trys.push([1, 6, , 7]);
+                        return [4 /*yield*/, this.page.content()];
+                    case 2:
                         pagetxt = _a.sent();
                         found = pagetxt.indexOf('Vaya! parece que estamos recibiendo muchas peticiones', 1) > -1;
-                        if (!found) return [3 /*break*/, 4];
+                        if (!found) return [3 /*break*/, 5];
                         console.log("--------------------\n Captcha ha saltado!");
                         console.log("esperando...");
                         return [4 /*yield*/, this.page.waitFor(this.timoutTimeCapchaDetected)];
-                    case 2:
-                        _a.sent();
-                        return [4 /*yield*/, this.initalizePuppeteer()];
                     case 3:
                         _a.sent();
-                        _a.label = 4;
-                    case 4: return [3 /*break*/, 6];
-                    case 5:
-                        error_1 = _a.sent();
+                        return [4 /*yield*/, this.initalizePuppeteer()];
+                    case 4:
+                        _a.sent();
+                        _a.label = 5;
+                    case 5: return [3 /*break*/, 7];
+                    case 6:
+                        error_2 = _a.sent();
                         return [2 /*return*/, false];
-                    case 6: return [2 /*return*/, found];
+                    case 7: return [2 /*return*/, found];
                 }
             });
         }); };
@@ -153,7 +185,7 @@ var ScrapperIdealistaPuppeteer = /** @class */ (function () {
         this.saveDataForMunicipio = function (data, json_file) {
             var jsonDataFile = json_file.replace(".json", "_scraped.json");
             if (!fs.existsSync(_this.outputTempDir)) {
-                fs.mkdirSync(_this.outputTempDir);
+                fs.mkdirSync("./" + _this.outputTempDir);
             }
             var outputFilename = "./" + _this.outputTempDir + jsonDataFile;
             fs.writeFileSync(outputFilename, JSON.stringify(data));
@@ -180,7 +212,7 @@ var ScrapperIdealistaPuppeteer = /** @class */ (function () {
         this.outputTempDir = this.outputTempDir + this.sessionId + "/";
         this.sessionId = this.config.sessionId;
         console.log("\n-------------------------------------------------------");
-        console.log(this.sessionId);
+        console.log("starting execution " + this.sessionId);
         console.log("\n-------------------------------------------------------");
     };
     ScrapperIdealistaPuppeteer.prototype.main = function () {
@@ -232,7 +264,7 @@ var ScrapperIdealistaPuppeteer = /** @class */ (function () {
                     case 7:
                         _b.sent();
                         console.log(data);
-                        return [4 /*yield*/, this.detectCapcha()];
+                        return [4 /*yield*/, this.detectCapcha(data)];
                     case 8:
                         capchaFound = _b.sent();
                         _b.label = 9;
@@ -273,13 +305,13 @@ var ScrapperIdealistaPuppeteer = /** @class */ (function () {
     };
     ScrapperIdealistaPuppeteer.prototype.extractDataAlquilerVenta = function (municipio, cusec) {
         return __awaiter(this, void 0, void 0, function () {
-            var urlVenta, data, extractedVenta, error_2, urlAlql, extractedAlql, error_3;
+            var urlVenta, data, extractedVenta, error_3, urlAlql, extractedAlql, error_4;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         urlVenta = "https://www.idealista.com/en/areas/venta-viviendas/?shape=" + cusec.urlEncoded;
                         console.log("extrayendo datos de venta para " + municipio.fileName + " \n" + urlVenta);
-                        data = { fecha: this.date, cusec: cusec.cusec, nmun: cusec.nmun, precio_medio_venta: 0, numero_anuncios_venta: 0, precio_medio_alquiler: 0, numero_anuncios_alquiler: 0 };
+                        data = { fecha: this.date, cusec: cusec.cusec, nmun: cusec.nmun, precio_medio_venta: undefined, numero_anuncios_venta: undefined, precio_medio_alquiler: undefined, numero_anuncios_alquiler: undefined };
                         data["_id"] = cusec.cusec + "--" + this.date;
                         _a.label = 1;
                     case 1:
@@ -291,7 +323,7 @@ var ScrapperIdealistaPuppeteer = /** @class */ (function () {
                         data["numero_anuncios_venta"] = extractedVenta.numberOfElements;
                         return [3 /*break*/, 4];
                     case 3:
-                        error_2 = _a.sent();
+                        error_3 = _a.sent();
                         console.log("error");
                         return [3 /*break*/, 4];
                     case 4: return [4 /*yield*/, this.page.waitFor(this.timoutTimeSearches)];
@@ -309,7 +341,7 @@ var ScrapperIdealistaPuppeteer = /** @class */ (function () {
                         data["numero_anuncios_alquiler"] = extractedAlql.numberOfElements;
                         return [3 /*break*/, 9];
                     case 8:
-                        error_3 = _a.sent();
+                        error_4 = _a.sent();
                         console.log("error");
                         return [3 /*break*/, 9];
                     case 9: return [2 /*return*/, data];
