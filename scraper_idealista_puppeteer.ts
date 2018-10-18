@@ -100,7 +100,8 @@ export class ScrapperIdealistaPuppeteer {
     initalizePuppeteer = async () => {
         this.browser = await Apify.launchPuppeteer({
             userAgent: randomUA.generate(),
-            headless: true
+            headless: true,
+            args: ['--no-sandbox', '--disable-setuid-sandbox']
         });
         this.page = await this.browser.newPage();
     }
