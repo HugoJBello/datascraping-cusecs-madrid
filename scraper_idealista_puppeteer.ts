@@ -203,7 +203,7 @@ export class ScrapperIdealistaPuppeteer {
     saveDataForMunicipio = (data: any, json_file: any) => {
         let jsonDataFile = json_file.replace(".json", "_scraped.json");
         if (!fs.existsSync(this.outputTempDir)) {
-            fs.mkdirSync(this.outputTempDir);
+            fs.mkdirSync("./" + this.outputTempDir);
         }
         const outputFilename = "./" + this.outputTempDir + jsonDataFile;
         fs.writeFileSync(outputFilename, JSON.stringify(data));
