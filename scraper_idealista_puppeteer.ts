@@ -117,7 +117,8 @@ export class ScrapperIdealistaPuppeteer {
             data["numero_anuncios_venta"] = extractedVenta.numberOfElements;
 
         } catch (error) {
-            console.log("error");
+            console.log("error --------------------------");
+            console.log(error);
         }
         await this.page.waitFor(this.timoutTimeSearches);
 
